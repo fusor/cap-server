@@ -25,8 +25,8 @@ go build # build binary
 ./cap-server # listens on port 3001
 ```
 
-  ## using vagrant
-  [link https://github.com/fusor/cap/blob/master/README.md Vagrant environment]
+## using vagrant
+[link https://github.com/fusor/cap/blob/master/README.md Vagrant environment]
 
 ### Golang primer
 I typically checkout my go projects at the same level as the ```bin,pkg,src```.
