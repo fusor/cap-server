@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -220,6 +221,11 @@ func NuleculeDeploy(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(res_map) // Success, fail?
 }
 
+func IndexHandler(w http.ResponseWriter, r *http.Request) {
+	t, _ := template.ParseFiles("static/index.html")
+	t.Execute(w, nil)
+}
+
 func wrapScriptCmd(cmd string) string {
 	return fmt.Sprintf("\"%s\"", cmd)
 }
@@ -234,14 +240,22 @@ func mainGoDir() string {
 
 func main() {
 	r := mux.NewRouter()
+
+	// API routes
 	r.HandleFunc("/nulecules", Nulecules)
 	r.HandleFunc("/nulecules/{id}", NuleculeDetails).Methods("GET")
 	r.HandleFunc("/nulecules/{id}", NuleculeUpdate).Methods("POST")
 	r.HandleFunc("/nulecules/{id}/deploy", NuleculeDeploy).Methods("POST")
+
+	// Setup static file server at /static/, used for stuff like js
+	fs := http.StripPrefix("/static/", http.FileServer(http.Dir("./static")))
+	r.PathPrefix("/static/").Handler(fs)
+
+	// Serve index template
+	r.HandleFunc("/", IndexHandler)
+
 	fmt.Println("Listening on localhost:3001")
-
 	allowed_headers := handlers.AllowedHeaders([]string{"Content-Type"})
-
 	log.Fatal(http.ListenAndServe(":3001", handlers.CORS(
 		allowed_headers,
 	)(r)))
