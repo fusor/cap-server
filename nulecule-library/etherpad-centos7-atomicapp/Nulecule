@@ -25,10 +25,16 @@ graph:
         default: 9001
       - name: db_user
         description: Database User
+        binds:
+            - mariadb-centos7-atomicapp::db_user
       - name: db_pass
         description: Database Password
+        binds:
+            - mariadb-centos7-atomicapp::db_pass
       - name: db_name
         description: Database Name
+        binds:
+            - mariadb-centos7-atomicapp::db_name
       - name: db_host
         description: Database service hostname/ip
         default: mariadb

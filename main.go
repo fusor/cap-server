@@ -13,6 +13,8 @@ import (
 	"path"
 	"strings"
 
+	yaml "gopkg.in/yaml.v1"
+
 	//"github.com/codeskyblue/go-sh"
 
 	"github.com/gorilla/handlers"
@@ -54,7 +56,68 @@ func parseBasicINI(data string) map[string]map[string]string {
 	return answers
 }
 
-func getAnswersFromFile(nulecule_path string) map[string]Answers {
+// Nulecule structs
+type Param struct {
+	Name        string
+	Description string
+	Default     string
+	Binds       []string
+}
+
+type Node struct {
+	Name   string
+	Source string
+	Params []Param
+}
+
+type Nulecule struct {
+	Specversion string
+	Id          string
+	Metadata    map[string]string
+	Params      map[string]string
+	Graph       []Node
+}
+
+type Bindings struct {
+	Src     string `json:"src"`
+	SrcKey  string `json:"src_key"`
+	Dest    string `json:"dest"`
+	DestKey string `json:"dest_key"`
+}
+
+// End Nulecule structs
+
+type NuleculeDetail struct {
+	Nulecule Answers    `json:"nulecule"`
+	Bindings []Bindings `json:"bindings"`
+}
+
+func getBindings(nulecule_path string) []Bindings {
+	//func getBindings(nulecule_path string) {
+	nulecule_file := "nulecule-library/" + nulecule_path + "/Nulecule"
+	nulecule, err := ioutil.ReadFile(nulecule_file)
+	if err != nil {
+		log.Fatal(err)
+	}
+	n := Nulecule{}
+	err = yaml.Unmarshal(nulecule, &n)
+	if err != nil {
+		log.Fatal(err)
+	}
+	bindings := make([]Bindings, 0)
+	for _, graph := range n.Graph {
+		for _, param := range graph.Params {
+			for _, bind := range param.Binds {
+				bindval := strings.Split(bind, "::")
+				b := Bindings{graph.Name, param.Name, bindval[0], bindval[1]}
+				bindings = append(bindings, b)
+			}
+		}
+	}
+	return bindings
+}
+
+func getAnswersFromFile(nulecule_path string) Answers {
 	os.Remove("answers.conf")
 	/*
 		output, err := exec.Command("atomicapp", "genanswers", "nulecule-library/"+nulecule_path).CombinedOutput()
@@ -68,9 +131,7 @@ func getAnswersFromFile(nulecule_path string) map[string]Answers {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println(string(answers))
-	// add root node
-	return map[string]Answers{"nulecule": parseBasicINI(string(answers))}
+	return parseBasicINI(string(answers))
 }
 
 func getNuleculeList() map[string][]string {
@@ -85,13 +146,17 @@ func getNuleculeList() map[string][]string {
 }
 
 func Nulecules(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Entered Nulecules method")
 	json.NewEncoder(w).Encode(getNuleculeList())
 }
 
 func NuleculeDetails(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Entered NuleculeDetails method")
 	vars := mux.Vars(r)
 	nulecule_id := vars["id"]
-	json.NewEncoder(w).Encode(getAnswersFromFile(nulecule_id))
+	details := NuleculeDetail{getAnswersFromFile(nulecule_id), getBindings(nulecule_id)}
+	json.NewEncoder(os.Stdout).Encode(details)
+	json.NewEncoder(w).Encode(details)
 }
 
 func genUUID() string {
@@ -123,6 +188,7 @@ func addProviderDetails(answers Answers) {
 }
 
 func NuleculeUpdate(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Entered NuleculeUpdate method")
 	// update the nulecule answers file
 	vars := mux.Vars(r)
 	nulecule_id := vars["id"]
@@ -174,6 +240,7 @@ func getHomeDir() string {
 }
 
 func NuleculeDeploy(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Entered NuleculeDeploy method")
 	vars := mux.Vars(r)
 	nulecule_id := vars["id"]
 

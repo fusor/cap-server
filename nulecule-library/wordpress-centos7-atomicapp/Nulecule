@@ -23,10 +23,16 @@ graph:
         default: wordpress
       - name: db_user
         description: username for database
+        binds:
+            - mariadb-centos7-atomicapp::db_user
       - name: db_pass
         description:  password for db_user
+        binds:
+            - mariadb-centos7-atomicapp::db_pass
       - name: db_name
         description: database name
+        binds:
+            - mariadb-centos7-atomicapp::db_name
       - name: db_host
         description: database host
         default: mariadb:3306
