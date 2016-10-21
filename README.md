@@ -1,5 +1,5 @@
 <a name="overview"></a>
-# Overview
+# Overview[![Build Status](https://travis-ci.org/fusor/cap-server.svg)](https://travis-ci.org/fusor/cap-server) [![Coverage Status](https://coveralls.io/repos/fusor/cap-server/badge.svg?branch=master&service=github)](https://coveralls.io/github/fusor/cap-server?branch=master)
 cap-server is the [Golang](http://golang.org)  backend for the CAP project. It's has a restful API.
 
 <a name="usage"></a>
