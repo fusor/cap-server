@@ -1,1 +1,5 @@
 cap-server
+cap-server.debug
+pkg/
+src/
+bin/
