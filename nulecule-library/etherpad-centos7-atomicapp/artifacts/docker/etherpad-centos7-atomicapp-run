@@ -1,1 +1,0 @@
-docker run --link=mariadb-atomicapp-app:db -d --name etherpad -p $hostport:9001 $image
