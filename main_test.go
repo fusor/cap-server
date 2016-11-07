@@ -22,7 +22,8 @@ func TestNulecules(t *testing.T) {
 		t.Log(status)
 	}
 
-	expected := `{"nulecules":["apache-centos7-atomicapp","etherpad-centos7-atomicapp","flask-redis-centos7-atomicapp","gitlab-centos7-atomicapp","gocounter-scratch-atomicapp","guestbookgo-atomicapp","helloapache","mariadb-centos7-atomicapp","mariadb-fedora-atomicapp","mongodb-centos7-atomicapp","postgresql-centos7-atomicapp","redis-centos7-atomicapp","skydns-atomicapp","wordpress-centos7-atomicapp"]}`
+	expected := `{"nulecules":["eriknelson/etherpad-atomicapp","eriknelson/guestbookgo-atomicapp","eriknelson/wordpress-atomicapp"]}`
+	//expected := `{"nulecules":["apache-centos7-atomicapp","etherpad-centos7-atomicapp","flask-redis-centos7-atomicapp","gitlab-centos7-atomicapp","gocounter-scratch-atomicapp","guestbookgo-atomicapp","helloapache","mariadb-centos7-atomicapp","mariadb-fedora-atomicapp","mongodb-centos7-atomicapp","postgresql-centos7-atomicapp","redis-centos7-atomicapp","skydns-atomicapp","wordpress-centos7-atomicapp"]}`
 
 	if strings.Trim(rr.Body.String(), "\n\t ") != expected {
 		t.Errorf("handler returned unexpected body: got [%v] want [%v]",
@@ -61,13 +62,6 @@ func TestIndexHandler(t *testing.T) {
 
 	if actual != expected {
 		t.Errorf("handler returned unexpected body: got [%v] want [%v]", actual, expected)
-	}
-}
-
-func TestWrapScriptCmd(t *testing.T) {
-	wrappedCmd := wrapScriptCmd("ls")
-	if wrappedCmd != "\"ls\"" {
-		t.Errorf("wrap returned %v expected %v", wrappedCmd, "\"ls\"")
 	}
 }
 
