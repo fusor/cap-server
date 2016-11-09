@@ -1,5 +1,3 @@
 ---
 nulecules:
-  - eriknelson/etherpad-atomicapp
-  - eriknelson/guestbookgo-atomicapp
-  - eriknelson/wordpress-atomicapp
+  - fusordevel/etherpad-atomicapp
