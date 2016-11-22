@@ -128,9 +128,9 @@ func NuleculeDeploy(w http.ResponseWriter, r *http.Request, engine *WorkEngine) 
 	registry := vars["registry"]
 
 	//Run the atomicapp!
-	run_script := path.Join(mainGoDir(), "run_atomicapp.sh")
-	output := runCommand("bash", run_script, registry, nuleculeId)
-	fmt.Println(string(output))
+	//run_script := path.Join(mainGoDir(), "run_atomicapp.sh")
+	//output := runCommand("bash", run_script, registry, nuleculeId)
+	//fmt.Println(string(output))
 
 	jobToken := engine.StartNewJob(NewDeployJob(registry, nuleculeId))
 
