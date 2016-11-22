@@ -6,7 +6,6 @@ import (
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"html/template"
-	"log"
 	"net/http"
 	"os"
 	"path"
@@ -19,30 +18,43 @@ import (
 // TODO: Consider longer term approach than a gross global manifest!
 var namespaceManifest NamespaceManifest
 
+const MSG_BUFFER_SIZE = 20
+
 func main() {
 	namespaceManifest = make(NamespaceManifest)
 
-	r := mux.NewRouter()
+	engine := NewWorkEngine(MSG_BUFFER_SIZE)
+	subscriber := NewSocketWorkSubscriber()
+	engine.AttachSubscriber(subscriber)
 
-	// API routes
-	r.HandleFunc("/nulecules", Nulecules)
-	r.HandleFunc("/nulecules/{registry}/{id}", NuleculeDetails).Methods("GET")
-	r.HandleFunc("/nulecules/{registry}/{id}", NuleculeUpdate).Methods("POST")
-	r.HandleFunc("/nulecules/{registry}/{id}/deploy", NuleculeDeploy).Methods("POST")
-	r.HandleFunc("/health-check", RunHealthCheck).Methods("POST")
+	http.Handle("/socket.io/", subscriber.Server)
 
-	// Setup static file server at /static/, used for stuff like js
+	api := mux.NewRouter()
+	api.HandleFunc("/api/nulecules", Nulecules)
+	api.HandleFunc("/api/nulecules/{registry}/{id}", NuleculeDetails).Methods("GET")
+	api.HandleFunc("/api/nulecules/{registry}/{id}", NuleculeUpdate).Methods("POST")
+	api.HandleFunc("/api/nulecules/{registry}/{id}/deploy",
+		createEngineHandler(engine, NuleculeDeploy)).Methods("POST")
+
+	allowedHeaders := handlers.AllowedHeaders([]string{"Content-Type"})
+	http.Handle("/api/", handlers.CORS(allowedHeaders)(api))
+
 	fs := http.StripPrefix("/static/", http.FileServer(http.Dir("./static")))
-	r.PathPrefix("/static/").Handler(fs)
+	http.Handle("/static/", fs)
 
-	// Serve index template
-	r.HandleFunc("/", IndexHandler)
+	http.HandleFunc("/", IndexHandler)
 
 	fmt.Println("Listening on localhost:3001")
-	allowed_headers := handlers.AllowedHeaders([]string{"Content-Type"})
-	log.Fatal(http.ListenAndServe(":3001", handlers.CORS(
-		allowed_headers,
-	)(r)))
+	http.ListenAndServe(":3001", nil)
+}
+
+type GorillaRouteHandler func(http.ResponseWriter, *http.Request)
+type EngineRouteHandler func(http.ResponseWriter, *http.Request, *WorkEngine)
+
+func createEngineHandler(engine *WorkEngine, r EngineRouteHandler) GorillaRouteHandler {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		r(writer, request, engine)
+	}
 }
 
 func IndexHandler(w http.ResponseWriter, r *http.Request) {
@@ -109,19 +121,22 @@ func NuleculeUpdate(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(res_map) // Success, fail?
 }
 
-func NuleculeDeploy(w http.ResponseWriter, r *http.Request) {
+func NuleculeDeploy(w http.ResponseWriter, r *http.Request, engine *WorkEngine) {
 	fmt.Println("Entered NuleculeDeploy method")
 	vars := mux.Vars(r)
-	nulecule_id := vars["id"]
+	nuleculeId := vars["id"]
 	registry := vars["registry"]
 
-	// Run the atomicapp!
+	//Run the atomicapp!
 	run_script := path.Join(mainGoDir(), "run_atomicapp.sh")
-	output := runCommand("bash", run_script, registry, nulecule_id)
+	output := runCommand("bash", run_script, registry, nuleculeId)
 	fmt.Println(string(output))
+
+	jobToken := engine.StartNewJob(NewDeployJob(registry, nuleculeId))
 
 	// TODO: Error handling!
 	res_map := make(map[string]interface{})
+	res_map["job_token"] = jobToken
 	res_map["result"] = "success"
 
 	json.NewEncoder(w).Encode(res_map) // Success, fail?
