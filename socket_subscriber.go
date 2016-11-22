@@ -8,7 +8,7 @@ import (
 
 type SocketWorkSubscriber struct {
 	Server         *io.Server
-	msgBuffer      <-chan string
+	msgBuffer      <-chan IWorkMsg
 	clientManifest map[string]io.Socket
 }
 
@@ -41,7 +41,7 @@ func configureServer(s *SocketWorkSubscriber) {
 	})
 }
 
-func (s *SocketWorkSubscriber) Subscribe(msgBuffer <-chan string) {
+func (s *SocketWorkSubscriber) Subscribe(msgBuffer <-chan IWorkMsg) {
 	// Always drain the buffer if there's a message waiting.
 	// NOTE: DON'T FORGET TO GOROUTINE THIS, OR WILL YOU CHOKE THE MAIN PROCESSOR
 	go func() {
@@ -53,9 +53,10 @@ func (s *SocketWorkSubscriber) Subscribe(msgBuffer <-chan string) {
 }
 
 // TODO: Broadcast to job channels instead of the firehose
-func (s *SocketWorkSubscriber) broadcastFirehose(msg string) {
-	fmt.Printf("E -> %s", msg)
+func (s *SocketWorkSubscriber) broadcastFirehose(msg IWorkMsg) {
+	renderedMsg := msg.Render()
+	fmt.Printf("E -> %s\n", renderedMsg)
 	for _, socket := range s.clientManifest {
-		socket.Emit("firehose", msg)
+		socket.Emit("firehose", renderedMsg)
 	}
 }

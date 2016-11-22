@@ -5,16 +5,16 @@ import (
 )
 
 type IWork interface {
-	Run(token string, msgBuffer chan<- string)
+	Run(token string, msgBuffer chan<- IWorkMsg)
 }
 
 type WorkEngine struct {
-	msgBuffer chan string
+	msgBuffer chan IWorkMsg
 }
 
 func NewWorkEngine(bufferSize int) *WorkEngine {
 	return &WorkEngine{
-		msgBuffer: make(chan string, bufferSize),
+		msgBuffer: make(chan IWorkMsg, bufferSize),
 	}
 }
 
