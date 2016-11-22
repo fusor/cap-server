@@ -5,7 +5,11 @@ import (
 )
 
 type IWorkSubscriber interface {
-	Subscribe(msgBuffer <-chan string)
+	Subscribe(msgBuffer <-chan IWorkMsg)
+}
+
+type IWorkMsg interface {
+	Render() string
 }
 
 ////////////////////////////////////////////////////////////
@@ -25,10 +29,10 @@ func SubscriberFactory(sub string) IWorkSubscriber {
 
 // Example Subscriber
 type StdoutWorkSubscriber struct {
-	msgBuffer <-chan string
+	msgBuffer <-chan IWorkMsg
 }
 
-func (s *StdoutWorkSubscriber) Subscribe(msgBuffer <-chan string) {
+func (s *StdoutWorkSubscriber) Subscribe(msgBuffer <-chan IWorkMsg) {
 	// Always drain the buffer if there's a message waiting.
 	// Here we're just forwarding to stdout, but of course, the message
 	// destination could be anything (ultimate websockets!)
@@ -37,7 +41,7 @@ func (s *StdoutWorkSubscriber) Subscribe(msgBuffer <-chan string) {
 	go func() {
 		for {
 			msg := <-msgBuffer
-			fmt.Printf(msg)
+			fmt.Printf(msg.Render())
 		}
 	}()
 }
