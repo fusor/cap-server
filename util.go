@@ -21,15 +21,6 @@ func genUUID() string {
 	return strings.Trim(string(runCommand("/usr/bin/uuidgen")), "\n")
 }
 
-// File system helpers
-func mainGoDir() string {
-	/*
-		_, filename, _, _ := runtime.Caller(0)
-		return fmt.Sprintf(path.Dir(filename))
-	*/
-	return "."
-}
-
 func getHomeDir() string {
 	usr, err := user.Current()
 	if err != nil {
@@ -236,7 +227,7 @@ func createNewProject(project string) string {
 
 // Atomic helpers
 func downloadNulecule(registry string, nuleculeId string) {
-	download_script := path.Join(mainGoDir(), "download_atomicapp.sh")
+	download_script := path.Join(".", "download_atomicapp.sh")
 	output := runCommand("bash", download_script, registry, nuleculeId)
 	fmt.Println(string(output))
 }

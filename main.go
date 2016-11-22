@@ -8,7 +8,6 @@ import (
 	"html/template"
 	"net/http"
 	"os"
-	"path"
 )
 
 // We need to strip namespaces off answer file sections to talk to the
@@ -127,11 +126,6 @@ func NuleculeDeploy(w http.ResponseWriter, r *http.Request, engine *WorkEngine) 
 	nuleculeId := vars["id"]
 	registry := vars["registry"]
 
-	//Run the atomicapp!
-	//run_script := path.Join(mainGoDir(), "run_atomicapp.sh")
-	//output := runCommand("bash", run_script, registry, nuleculeId)
-	//fmt.Println(string(output))
-
 	jobToken := engine.StartNewJob(NewDeployJob(registry, nuleculeId))
 
 	// TODO: Error handling!
@@ -140,24 +134,4 @@ func NuleculeDeploy(w http.ResponseWriter, r *http.Request, engine *WorkEngine) 
 	res_map["result"] = "success"
 
 	json.NewEncoder(w).Encode(res_map) // Success, fail?
-}
-
-func RunHealthCheck(w http.ResponseWriter, r *http.Request) {
-	body := make(map[string]string)
-	json.NewDecoder(r.Body).Decode(&body)
-	host := body["host"]
-
-	health_check_script := path.Join(mainGoDir(), "health_check.sh")
-	output := runCommand("bash", health_check_script, host)
-
-	outputstr := string(output)
-
-	isAlive := false
-	if outputstr == "200" {
-		isAlive = true
-	}
-
-	res_map := make(map[string]interface{})
-	res_map["is_alive"] = isAlive
-	json.NewEncoder(w).Encode(res_map)
 }
