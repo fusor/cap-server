@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"path"
 	"time"
@@ -9,7 +10,7 @@ import (
 type DeployJob struct {
 	registry   string
 	nuleculeId string
-	msgBuffer  chan<- string
+	msgBuffer  chan<- IWorkMsg
 	jobToken   string
 }
 
@@ -20,7 +21,7 @@ func NewDeployJob(registry string, nuleculeId string) *DeployJob {
 	}
 }
 
-func (d *DeployJob) Run(jobToken string, msgBuffer chan<- string) {
+func (d *DeployJob) Run(jobToken string, msgBuffer chan<- IWorkMsg) {
 	d.jobToken = jobToken
 	d.msgBuffer = msgBuffer
 
@@ -53,7 +54,22 @@ func (d *DeployJob) runHealthCheck() {
 }
 
 func (d *DeployJob) emit(msg string) {
-	d.msgBuffer <- fmt.Sprintf("[%s] %s/%s %s",
-		d.jobToken, d.registry, d.nuleculeId, msg,
-	)
+	d.msgBuffer <- DeployMsg{
+		d.jobToken,
+		d.registry,
+		d.nuleculeId,
+		msg,
+	}
+}
+
+type DeployMsg struct {
+	JobToken   string `json:"job_token"`
+	Registry   string `json:"registry"`
+	NuleculeId string `json:"nulecule_id"`
+	Msg        string `json:"msg"`
+}
+
+func (m DeployMsg) Render() string {
+	render, _ := json.Marshal(m)
+	return string(render)
 }
