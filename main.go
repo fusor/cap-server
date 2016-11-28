@@ -29,6 +29,7 @@ func main() {
 	r.HandleFunc("/nulecules/{registry}/{id}", NuleculeDetails).Methods("GET")
 	r.HandleFunc("/nulecules/{registry}/{id}", NuleculeUpdate).Methods("POST")
 	r.HandleFunc("/nulecules/{registry}/{id}/deploy", NuleculeDeploy).Methods("POST")
+	r.HandleFunc("/health-check", RunHealthCheck).Methods("POST")
 
 	// Setup static file server at /static/, used for stuff like js
 	fs := http.StripPrefix("/static/", http.FileServer(http.Dir("./static")))
@@ -119,17 +120,29 @@ func NuleculeDeploy(w http.ResponseWriter, r *http.Request) {
 	output := runCommand("bash", run_script, registry, nulecule_id)
 	fmt.Println(string(output))
 
-	// TODO: EXPOSE ROUTE!
-	// Need to figure out a way to tie the "svc" that was just
-	// created with the atomicapp that was deployed so we can
-	// expose the route correctly.
-	//
-	// `oc get svc`
-	// `oc expose service etherpad-svc -l name=etherpad`
-
 	// TODO: Error handling!
 	res_map := make(map[string]interface{})
 	res_map["result"] = "success"
 
 	json.NewEncoder(w).Encode(res_map) // Success, fail?
+}
+
+func RunHealthCheck(w http.ResponseWriter, r *http.Request) {
+	body := make(map[string]string)
+	json.NewDecoder(r.Body).Decode(&body)
+	host := body["host"]
+
+	health_check_script := path.Join(mainGoDir(), "health_check.sh")
+	output := runCommand("bash", health_check_script, host)
+
+	outputstr := string(output)
+
+	isAlive := false
+	if outputstr == "200" {
+		isAlive = true
+	}
+
+	res_map := make(map[string]interface{})
+	res_map["is_alive"] = isAlive
+	json.NewEncoder(w).Encode(res_map)
 }
