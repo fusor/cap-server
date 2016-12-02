@@ -10,14 +10,16 @@ import (
 type DeployJob struct {
 	registry   string
 	nuleculeId string
+	host       string
 	msgBuffer  chan<- IWorkMsg
 	jobToken   string
 }
 
-func NewDeployJob(registry string, nuleculeId string) *DeployJob {
+func NewDeployJob(registry string, nuleculeId string, host string) *DeployJob {
 	return &DeployJob{
 		registry:   registry,
 		nuleculeId: nuleculeId,
+		host:       host,
 	}
 }
 
@@ -29,7 +31,7 @@ func (d *DeployJob) Run(jobToken string, msgBuffer chan<- IWorkMsg) {
 	d.runDeploymentScript()
 
 	d.emit("Initiating health check...")
-	d.runHealthCheck()
+	d.runHealthCheck(300 * time.Second)
 
 	d.emit("Full deployment finished.")
 }
@@ -42,15 +44,24 @@ func (d *DeployJob) runDeploymentScript() {
 	d.emit("Deployment script executed successfully!")
 }
 
-func (d *DeployJob) runHealthCheck() {
-	// TODO: Actually implement...
-	counter := 0
-	for counter != 10 {
-		d.emit("Pinged the service, 503")
-		counter++
-		time.Sleep(time.Duration(time.Millisecond * 500))
+func (d *DeployJob) runHealthCheck(timeout time.Duration) {
+	var statuscode int
+	start := time.Now()
+	var elapsed time.Duration
+
+	for statuscode != 200 || elapsed > timeout {
+		statuscode := pingHost(d.host)
+		if statuscode == 200 {
+			d.emit("Pinged the service, 200! It's up!")
+		} else {
+			d.emit("Pinged the service")
+		}
+		// sleep 1s
+		time.Sleep(1 * time.Second)
+		elapsed = time.Since(start)
 	}
-	d.emit("Pinged the service, 200! It's up!")
+
+	d.emit("Health Check timed out!")
 }
 
 func (d *DeployJob) emit(msg string) {

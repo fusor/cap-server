@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"os/user"
@@ -47,6 +49,20 @@ func getNuleculeList() NuleculeList {
 	return nuleculeList
 }
 
+func findEntry(answers Answers, entry string) map[string]string {
+
+	var res_map = make(map[string]string)
+
+	for _, v := range answers {
+		for k1, v1 := range v {
+			if k1 == entry {
+				res_map[k1] = v1
+			}
+		}
+	}
+	return res_map
+}
+
 func writeUserAnswersToFile(
 	registry string,
 	nuleculeId string,
@@ -71,6 +87,16 @@ func writeUserAnswersToFile(
 			fmt.Fprintf(f, "%s=%s\n", k1, v1)
 		}
 	}
+}
+
+func getGeneratedAnswersFile(registry string, nuleculeId string) Answers {
+	nuleculeDir := getNuleculeDir(registry, nuleculeId)
+	answersFile := path.Join(nuleculeDir, ANSWERS_FILE_GEN)
+	answers, err := ioutil.ReadFile(answersFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return parseBasicINI(string(answers))
 }
 
 // Command helpers
@@ -168,8 +194,10 @@ func parseBasicINI(data string) map[string]map[string]string {
 			key = strings.Trim(str, "[]\n")
 			answers[key] = make(map[string]string)
 		} else {
-			subvalue := strings.Split(str, " = ")
-			answers[key][subvalue[0]] = strings.Trim(subvalue[1], "\n")
+			subvalue := strings.Split(str, "=")
+			if len(subvalue) > 1 {
+				answers[key][strings.TrimSpace(subvalue[0])] = strings.TrimSpace(subvalue[1])
+			}
 		}
 	}
 
@@ -230,4 +258,26 @@ func downloadNulecule(registry string, nuleculeId string) {
 	download_script := path.Join(".", "download_atomicapp.sh")
 	output := runCommand("bash", download_script, registry, nuleculeId)
 	fmt.Println(string(output))
+}
+
+func pingHost(host string) int {
+	fmt.Println(host)
+
+	u, err := url.Parse(host)
+	if err != nil {
+		fmt.Println("could not parse host, should probably return a 400 BadRequest")
+	}
+
+	if u.Scheme == "" {
+		u.Scheme = "http"
+	}
+
+	// ping the host
+	resp, err := http.Get(u.String())
+	if err != nil {
+		// TODO: do we print out the errors? or just ignore them
+		return 0
+	}
+
+	return resp.StatusCode
 }
