@@ -46,13 +46,17 @@ func getNuleculeDir(registry string, nuleculeId string) string {
 	return path.Join(getNuleculesDir(), registry, nuleculeId)
 }
 
-func getNuleculeList() NuleculeList {
-	nuleculeListFile, _ := ioutil.ReadFile("./nulecule_list.yaml")
-	nuleculeList := NuleculeList{}
-	err := yaml.Unmarshal(nuleculeListFile, &nuleculeList)
-	if err != nil {
-		log.Fatal(err)
-	}
+func getNuleculeList(organization string, username string, password string) NuleculeList {
+	org_script := path.Join(mainGoDir(), "org.sh")
+  fmt.Println(username)
+	output := runCommand("bash", org_script, organization, username, password)
+
+  nuleculeList := NuleculeList{}
+
+  err := yaml.Unmarshal(output, &nuleculeList)
+  if err != nil {
+    log.Fatal(err)
+  }
 	return nuleculeList
 }
 
