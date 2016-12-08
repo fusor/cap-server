@@ -8,6 +8,8 @@ import (
 	"html/template"
 	"net/http"
 	"os"
+	"path"
+	"strings"
 )
 
 // We need to strip namespaces off answer file sections to talk to the
@@ -29,7 +31,7 @@ func main() {
 	http.Handle("/socket.io/", subscriber.Server)
 
 	api := mux.NewRouter()
-	api.HandleFunc("/api/nulecules", Nulecules)
+	api.HandleFunc("/api/nulecules", Nulecules).Methods("POST")
 	api.HandleFunc("/api/nulecules/{registry}/{id}", NuleculeDetails).Methods("GET")
 	api.HandleFunc("/api/nulecules/{registry}/{id}", NuleculeUpdate).Methods("POST")
 	api.HandleFunc("/api/nulecules/{registry}/{id}/deploy",
@@ -62,7 +64,47 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func Nulecules(w http.ResponseWriter, r *http.Request) {
-	json.NewEncoder(w).Encode(getNuleculeList())
+	fmt.Println("Entered Nulecules method")
+
+	res_map := make(map[string]string)
+	json.NewDecoder(r.Body).Decode(&res_map)
+
+	organization := res_map["org"]
+	username := res_map["username"]
+	password := res_map["password"]
+
+	channel := make(chan string)
+
+	list := getNuleculeList(organization, username, password)
+	fmt.Println("Length:", len(list.Nulecules))
+	responses := make([]string, len(list.Nulecules))
+
+	filteredList := NuleculeList{}
+	for _, nules := range list.Nulecules {
+		go IsImageAtomicApp("docker://"+nules, channel)
+	}
+
+	counter := 1
+	for response := range channel {
+		responses = append(responses, response)
+		if counter != len(list.Nulecules) {
+			counter++
+		} else {
+			fmt.Println("Closing Channel")
+			close(channel)
+		}
+	}
+
+	for _, value := range responses {
+		if strings.Compare(value, "ignore\n") != 0 && value != "" {
+			// Strip docker:// protocol, 9 chars
+			filteredList.Nulecules = append(filteredList.Nulecules, value[9:len(value)])
+		}
+	}
+
+	fmt.Println(filteredList.Nulecules)
+	json.NewEncoder(w).Encode(filteredList)
+
 }
 
 func NuleculeDetails(w http.ResponseWriter, r *http.Request) {
