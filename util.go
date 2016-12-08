@@ -21,6 +21,10 @@ func genUUID() string {
 	return strings.Trim(string(runCommand("/usr/bin/uuidgen")), "\n")
 }
 
+func mainGoDir() string {
+	return "."
+}
+
 func getHomeDir() string {
 	usr, err := user.Current()
 	if err != nil {
@@ -37,10 +41,13 @@ func getNuleculeDir(registry string, nuleculeId string) string {
 	return path.Join(getNuleculesDir(), registry, nuleculeId)
 }
 
-func getNuleculeList() NuleculeList {
-	nuleculeListFile, _ := ioutil.ReadFile("./nulecule_list.yaml")
+func getNuleculeList(organization string, username string, password string) NuleculeList {
+	orgScript := path.Join(mainGoDir(), "org.sh")
+	output := runCommand("bash", orgScript, organization, username, password)
+
 	nuleculeList := NuleculeList{}
-	err := yaml.Unmarshal(nuleculeListFile, &nuleculeList)
+
+	err := yaml.Unmarshal(output, &nuleculeList)
 	if err != nil {
 		log.Fatal(err)
 	}
