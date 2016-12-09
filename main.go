@@ -168,7 +168,11 @@ func NuleculeDeploy(w http.ResponseWriter, r *http.Request, engine *WorkEngine) 
 	nuleculeId := vars["id"]
 	registry := vars["registry"]
 
-	jobToken := engine.StartNewJob(NewDeployJob(registry, nuleculeId))
+	// TODO: probably a much better way to get the host
+	answers := getGeneratedAnswersFile(registry, nuleculeId)
+	entry_map := findEntry(answers, "endpoint")
+	fmt.Println(entry_map)
+	jobToken := engine.StartNewJob(NewDeployJob(registry, nuleculeId, entry_map["endpoint"]))
 
 	// TODO: Error handling!
 	res_map := make(map[string]interface{})
