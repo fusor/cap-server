@@ -76,7 +76,6 @@ func Nulecules(w http.ResponseWriter, r *http.Request) {
 	channel := make(chan string)
 
 	list := getNuleculeList(organization, username, password)
-	fmt.Println("Length:", len(list.Nulecules))
 	responses := make([]string, len(list.Nulecules))
 
 	filteredList := NuleculeList{}
@@ -90,7 +89,6 @@ func Nulecules(w http.ResponseWriter, r *http.Request) {
 		if counter != len(list.Nulecules) {
 			counter++
 		} else {
-			fmt.Println("Closing Channel")
 			close(channel)
 		}
 	}
@@ -102,7 +100,6 @@ func Nulecules(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	fmt.Println(filteredList.Nulecules)
 	json.NewEncoder(w).Encode(filteredList)
 
 }
@@ -171,7 +168,6 @@ func NuleculeDeploy(w http.ResponseWriter, r *http.Request, engine *WorkEngine) 
 	// TODO: probably a much better way to get the host
 	answers := getGeneratedAnswersFile(registry, nuleculeId)
 	entry_map := findEntry(answers, "endpoint")
-	fmt.Println(entry_map)
 	jobToken := engine.StartNewJob(NewDeployJob(registry, nuleculeId, entry_map["endpoint"]))
 
 	// TODO: Error handling!
