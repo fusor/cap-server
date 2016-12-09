@@ -44,7 +44,7 @@ func getNuleculeDir(registry string, nuleculeId string) string {
 }
 
 func getNuleculeList(organization string, username string, password string) NuleculeList {
-	orgScript := path.Join(mainGoDir(), "org.sh")
+	orgScript := path.Join(mainGoDir(), "get_images_for_org.sh")
 	output := runCommand("bash", orgScript, organization, username, password)
 
 	nuleculeList := NuleculeList{}
