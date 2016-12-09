@@ -11,7 +11,7 @@ type DeployJob struct {
 	registry   string
 	nuleculeId string
 	host       string
-	msgBuffer  chan<- IWorkMsg
+	msgBuffer  chan<- WorkMsg
 	jobToken   string
 }
 
@@ -29,7 +29,7 @@ func NewDeployJob(registry string, nuleculeId string, host string) *DeployJob {
 	}
 }
 
-func (d *DeployJob) Run(jobToken string, msgBuffer chan<- IWorkMsg) {
+func (d *DeployJob) Run(jobToken string, msgBuffer chan<- WorkMsg) {
 	d.jobToken = jobToken
 	d.msgBuffer = msgBuffer
 
