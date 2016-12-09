@@ -10,14 +10,22 @@ import (
 type DeployJob struct {
 	registry   string
 	nuleculeId string
+	host       string
 	msgBuffer  chan<- IWorkMsg
 	jobToken   string
 }
 
-func NewDeployJob(registry string, nuleculeId string) *DeployJob {
+const (
+	HEALTH_SUCCESS = iota
+	HEALTH_FAIL    // TODO: When something errors out and we know? vs a timeout
+	HEALTH_TIMEOUT
+)
+
+func NewDeployJob(registry string, nuleculeId string, host string) *DeployJob {
 	return &DeployJob{
 		registry:   registry,
 		nuleculeId: nuleculeId,
+		host:       host,
 	}
 }
 
@@ -29,9 +37,15 @@ func (d *DeployJob) Run(jobToken string, msgBuffer chan<- IWorkMsg) {
 	d.runDeploymentScript()
 
 	d.emit("Initiating health check...")
-	d.runHealthCheck()
+	healthCheckResult := d.runHealthCheck(300 * time.Second)
 
-	d.emit("Full deployment finished.")
+	if healthCheckResult == HEALTH_SUCCESS {
+		d.emit("Full deployment finished.")
+	} else if healthCheckResult == HEALTH_FAIL {
+		d.emit("Health check failed.")
+	} else {
+		d.emit("Health Check timed out!")
+	}
 }
 
 func (d *DeployJob) runDeploymentScript() {
@@ -42,15 +56,26 @@ func (d *DeployJob) runDeploymentScript() {
 	d.emit("Deployment script executed successfully!")
 }
 
-func (d *DeployJob) runHealthCheck() {
-	// TODO: Actually implement...
-	counter := 0
-	for counter != 10 {
-		d.emit("Pinged the service, 503")
-		counter++
-		time.Sleep(time.Duration(time.Millisecond * 500))
+func (d *DeployJob) runHealthCheck(timeout time.Duration) int {
+	var statuscode int
+	start := time.Now()
+	var elapsed time.Duration
+
+	for statuscode != 200 && elapsed < timeout {
+		statuscode = pingHost(d.host)
+		if statuscode == 200 {
+			d.emit("Pinged the service, 200! It's up!")
+			return HEALTH_SUCCESS
+		} else {
+			d.emit(fmt.Sprintf("Pinged the service @ %d", time.Now().Unix()))
+		}
+		// sleep 1s
+		time.Sleep(1 * time.Second)
+		elapsed = time.Since(start)
 	}
-	d.emit("Pinged the service, 200! It's up!")
+
+	// Should only fall through here if things timeout
+	return HEALTH_TIMEOUT
 }
 
 func (d *DeployJob) emit(msg string) {
