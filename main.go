@@ -3,13 +3,13 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/gorilla/handlers"
-	"github.com/gorilla/mux"
 	"html/template"
 	"net/http"
 	"os"
-	"path"
 	"strings"
+
+	"github.com/gorilla/handlers"
+	"github.com/gorilla/mux"
 )
 
 // We need to strip namespaces off answer file sections to talk to the
